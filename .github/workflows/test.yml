@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  a_test_job:
+  tag_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,23 +15,13 @@ jobs:
       - name: Extract commit messages
         id: get_messages
         run: |
-          echo "commit_messages=${{ join(github.event.commits.*.message, ' ')}}" >> "$GITHUB_OUTPUT"
+          echo "commit_messages=${{ join(github.event.commits.*.message, ' ') }}" >> $GITHUB_ENV
 
-  tag_release:
-    needs: a_test_job
+      - name: Show commit messages
+        run: echo "$commit_messages"
 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout full history
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Extract commit messages
-        id: get_messages
-        run: |
-          echo "commit_messages=${{ join(github.event.commits.*.message, ' ')}}" >> "$GITHUB_OUTPUT"
       - name: Bump version and push tag
-        if: ${{ github.event_name == 'push' && !contains(needs.a_test_job.outputs.commit_messages, '#skip') }}
+        if: ${{ !contains(env.commit_messages, '#skip') }}
         uses: anothrNick/github-tag-action@1.73.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
