@@ -1,6 +1,5 @@
 name: Testing stuff
-env:
-  COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
+
 on:
   push:
     branches:
@@ -10,22 +9,17 @@ jobs:
   a_test_job:
     runs-on: ubuntu-latest
     outputs:
-      commit_messages: ${{ steps.get_messages.outputs.commit_messages }}
+      commit_messages: ${{ steps.get_messages.outputs.commit_messages }}  # 👈 здесь задаём output
     steps:
       - uses: actions/checkout@v4
-      - name: github context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: commits
-        env:
-          COMMITS: ${{ toJson(github.event.commits) }}
-        run: echo "$COMMITS"
-      - name: commit messages
-        env:
-          COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
-        run: echo "$COMMIT_MESSAGES"
+
+      - name: Extract commit messages
+        id: get_messages
+        run: |
+          echo "commit_messages=${{ toJson(github.event.commits.*.message) }}" >> "$GITHUB_OUTPUT"
+
   tag_release:
+    needs: a_test_job
     if: ${{ github.event_name == 'push' && !contains(needs.a_test_job.outputs.commit_messages, '#skip') }}
     runs-on: ubuntu-latest
     steps:
