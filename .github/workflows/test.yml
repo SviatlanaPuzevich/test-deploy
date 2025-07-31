@@ -9,6 +9,8 @@ on:
 jobs:
   a_test_job:
     runs-on: ubuntu-latest
+    outputs:
+      commit_messages: ${{ steps.get_messages.outputs.commit_messages }}
     steps:
       - uses: actions/checkout@v4
       - name: github context
