@@ -1,7 +1,6 @@
 name: Testing stuff
 env:
   COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
-  CONDITION: ${{ contains(env.COMMIT_MESSAGES, '#skip') }}
 on:
   push:
     branches:
@@ -25,7 +24,7 @@ jobs:
           COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
         run: echo "$COMMIT_MESSAGES"
   tag_release:
-    if: ${{ github.event_name == 'push' && env.CONDITION == 'false' }}
+    if: ${{ github.event_name == 'push' && !contains(env.COMMIT_MESSAGES, '#skip') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout full history
