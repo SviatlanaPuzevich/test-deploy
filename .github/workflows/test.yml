@@ -8,27 +8,30 @@ on:
 jobs:
   a_test_job:
     runs-on: ubuntu-latest
-    outputs:
-      commit_messages: ${{ steps.get_messages.outputs.commit_messages }}  # 👈 здесь задаём output
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Extract commit messages
         id: get_messages
         run: |
-          echo "commit_messages=${{ toJson(github.event.commits.*.message) }}" >> "$GITHUB_OUTPUT"
+          echo "commit_messages=${{ join(github.event.commits.*.message, ' ')}}" >> "$GITHUB_OUTPUT"
 
   tag_release:
     needs: a_test_job
-    if: ${{ github.event_name == 'push' && !contains(needs.a_test_job.outputs.commit_messages, '#skip') }}
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      - name: Extract commit messages
+        id: get_messages
+        run: |
+          echo "commit_messages=${{ join(github.event.commits.*.message, ' ')}}" >> "$GITHUB_OUTPUT"
       - name: Bump version and push tag
+        if: ${{ github.event_name == 'push' && !contains(needs.a_test_job.outputs.commit_messages, '#skip') }}
         uses: anothrNick/github-tag-action@1.73.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
