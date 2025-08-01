@@ -24,3 +24,58 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: patch
+  discord_notification:
+    runs-on: ubuntu-latest
+    needs: [ tag_release ]
+    steps:
+      - name: Send successes message in discord
+        if: ${{ success() }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          echo "URL=[$DISCORD_WEBHOOK]"
+          COMMIT_HASH="${{ github.sha }}"
+          DESCRIPTION="**Commit**: \`${COMMIT_HASH}\`"
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "$(jq -n \
+              --arg username "CI/CD Github Bot" \
+              --arg title "🎉 New version ${{ needs.tag_release.outputs.tag }} deployed successfully!" \
+              --arg description "$DESCRIPTION" \
+              --argjson color 65280 \
+              '{
+                username: $username,
+                embeds: [
+                  {
+                    title: $title,
+                    description: $description,
+                    color: $color
+                  }
+                ]
+              }')" \
+            "$DISCORD_WEBHOOK"
+      - name: Send failure message in discord
+        if: ${{ failure() }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          COMMIT_HASH="${{ github.sha }}"
+          DESCRIPTION="**Commit**: \`${COMMIT_HASH}\`"
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "$(jq -n \
+              --arg username "CI/CD Github Bot" \
+              --arg title "❌ Build failed" \
+              --arg description "$DESCRIPTION" \
+              --argjson color 16711680 \
+              '{
+                username: $username,
+                embeds: [
+                  {
+                    title: $title,
+                    description: $description,
+                    color: $color
+                  }
+                ]
+              }')" \
+            "$DISCORD_WEBHOOK"
